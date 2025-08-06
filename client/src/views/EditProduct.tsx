@@ -1,28 +1,36 @@
 import { Link, Form, useActionData, type ActionFunctionArgs, redirect, type LoaderFunctionArgs, useLoaderData } from "react-router-dom";
 import ErrorMessage from "../components/ErrorMessage";
-import { addProduct, getProductById } from "../services/ProductService";
+import { getProductById, updateProduct } from "../services/ProductService";
 import type { Product } from "../types";
+import ProductForm from "../components/ProductForm";
 
 export async function loader({ params }: LoaderFunctionArgs) {
-  if (params.id !== undefined){
+  if (params.id !== undefined) {
     const product = await getProductById(+params.id)
-    if(!product) {
+    if (!product) {
       return redirect('/')
     }
     return product
   }
 }
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function action({ request, params }: ActionFunctionArgs) {
   const data = Object.fromEntries(await request.formData())
 
   if (Object.values(data).includes('')) {
     return { error: 'Todos los campos son obligatorios' }
   }
-  await addProduct(data)
 
-  return redirect('/')
+  if (params.id !== undefined) {
+    await updateProduct(data, +params.id)
+    return redirect('/')
+  }
 }
+
+const availabilityOptions = [
+  { name: 'Disponible', value: true },
+  { name: 'No Disponible', value: false }
+]
 
 export default function EditProduct() {
   const product: Product = useLoaderData()
@@ -45,33 +53,25 @@ export default function EditProduct() {
         className="mt-10"
         method="POST"
       >
+        <ProductForm
+          product={product}
+        />
+
         <div className="mb-4">
           <label
-            className="text-gray-800 font-semibold"
-            htmlFor="name"
-          >Nombre Producto:</label>
-          <input
-            id="name"
-            type="text"
-            className="mt-2 block w-full p-3 rounded-md bg-gray-50 placeholder:italic"
-            placeholder="Nombre del Producto"
-            name="name"
-            defaultValue={product.name}
-          />
-        </div>
-        <div className="mb-4">
-          <label
-            className="text-gray-800 font-semibold"
-            htmlFor="price"
-          >Precio:</label>
-          <input
-            id="price"
-            type="number"
-            className="mt-2 block w-full p-3 rounded-md bg-gray-50 placeholder:italic"
-            placeholder="Precio Producto, ej. 100, 250..."
-            name="price"
-            defaultValue={product.price}
-          />
+            className="text-gray-800"
+            htmlFor="availability"
+          >Disponibilidad:</label>
+          <select
+            id="availability"
+            className="mt-2 block w-full p-3 rounded-md bg-gray-50 cursor-pointer"
+            name="availability"
+            defaultValue={product?.availability.toString()}
+          >
+            {availabilityOptions.map(option => (
+              <option key={option.name} value={option.value.toString()}>{option.name}</option>
+            ))}
+          </select>
         </div>
         <input
           type="submit"

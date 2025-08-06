@@ -1,4 +1,4 @@
-import { safeParse } from "valibot"
+import { safeParse, number, pipe, string, transform, parse, boolean } from "valibot"
 import { DraftProductSchema, ProductSchema, ProductsSchema, type Product } from "../types"
 import axios from "axios"
 
@@ -54,5 +54,53 @@ export async function getProductById(id: Product['id']) {
     }
   } catch (error) {
     console.log(error)    
+  }
+}
+
+export async function updateProduct(data: ProductData, id: Product['id']) {
+  try {
+    const NumberSchema = pipe(
+      string(), 
+      transform(Number), 
+      number()
+    )
+
+    const BooleanSchema = pipe(
+      string(),
+      transform(val => val.toLowerCase() === "true"),
+      boolean()
+    )
+
+    const result = safeParse(ProductSchema, {
+      id,
+      name: data.name,
+      price: parse(NumberSchema, data.price),
+      availability: parse(BooleanSchema, data.availability)
+    })
+
+    if (result.success) {
+      const url = `${import.meta.env.VITE_API_URL}/api/products/${id}`
+      await axios.put(url, result.output)
+    }
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+export async function deleteProduct(id: Product['id']){
+  try {
+    const url = `${import.meta.env.VITE_API_URL}/api/products/${id}`
+    await axios.delete(url)
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+export async function updateAvailability(id: Product['id']){
+  try {
+    const url = `${import.meta.env.VITE_API_URL}/api/products/${id}`
+    await axios.patch(url)
+  } catch (error) {
+    console.log(error)
   }
 }
